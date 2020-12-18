@@ -1,72 +1,72 @@
 package com.crudpessoa.crudpessoa.controller;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+
+import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.crudpessoa.crudpessoa.model.Pessoa;
 import com.crudpessoa.crudpessoa.repository.PessoaRepository;
 
 @RestController
-@CrossOrigin
+@RequestMapping("/pessoa")
 public class PessoaController {
+	
 	@Autowired
-    private PessoaRepository _pessoaRepository;
-
-    @RequestMapping(value = "/pessoa", method = RequestMethod.GET)
-    public List<Pessoa> Get() {
-        return _pessoaRepository.findAll();
+    private PessoaRepository pessoaRepository;
+	
+	@GetMapping
+    public List<Pessoa> listar() {
+        return pessoaRepository.findAll();
     }
 
-    @RequestMapping(value = "/pessoa/{id}", method = RequestMethod.GET)
-    public ResponseEntity<Pessoa> GetById(@PathVariable(value = "id") int id)
-    {
-        Optional<Pessoa> pessoa = _pessoaRepository.findById(id);
-        if(pessoa.isPresent())
-            return new ResponseEntity<Pessoa>(pessoa.get(), HttpStatus.OK);
-        else
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    @GetMapping("/pessoa/{id}")
+    public ResponseEntity<Pessoa> getPessoaById(@PathVariable(value = "id") Long pessoaId)
+        throws Exception {
+        Pessoa pessoa = pessoaRepository.findById(pessoaId)
+          .orElseThrow(() -> new Exception("Pessoa not found for this id :: " + pessoaId));
+        return ResponseEntity.ok().body(pessoa);
+    }
+    
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Pessoa createPessoa(@Valid @RequestBody Pessoa pessoa) {
+        return pessoaRepository.save(pessoa);
     }
 
-    @RequestMapping(value = "/pessoa", method =  RequestMethod.POST)
-    public Pessoa Post(@Validated @RequestBody Pessoa pessoa)
-    {
-        return _pessoaRepository.save(pessoa);
-    }
+    @DeleteMapping("/pessoa/{id}")
+    public Map<String, Boolean> deletePessoa(@PathVariable(value = "id") Long pessoaId)
+         throws Exception {
+        Pessoa pessoa = pessoaRepository.findById(pessoaId)
+       .orElseThrow(() -> new Exception("Pessoa not present for the id :: " + pessoaId));
 
-    @RequestMapping(value = "/pessoa/{id}", method =  RequestMethod.PUT)
-    public ResponseEntity<Pessoa> Put(@PathVariable(value = "id") int id, @Validated @RequestBody Pessoa newPessoa)
-    {
-        Optional<Pessoa> oldPessoa = _pessoaRepository.findById(id);
-        if(oldPessoa.isPresent()){
-            Pessoa pessoa = oldPessoa.get();
-            pessoa.setNome(newPessoa.getNome());
-            _pessoaRepository.save(pessoa);
-            return new ResponseEntity<Pessoa>(pessoa, HttpStatus.OK);
-        }
-        else
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        pessoaRepository.delete(pessoa);
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("deleted", Boolean.TRUE);
+        return response;
     }
+    @PutMapping("/pessoa/{id}")
+    public ResponseEntity<Pessoa> updatePessoa(@PathVariable(value = "id") Long pessoaId,
+        @Valid @RequestBody Pessoa pessoaDetails) 
+        throws  Exception {
+        Pessoa pessoa = pessoaRepository.findById(pessoaId)
+        .orElseThrow(() -> new Exception("Pessoa not found for this id :: " + pessoaId));
 
-    @RequestMapping(value = "/pessoa/{id}", method = RequestMethod.DELETE)
-    public ResponseEntity<Object> Delete(@PathVariable(value = "id") int id)
-    {
-        Optional<Pessoa> pessoa = _pessoaRepository.findById(id);
-        if(pessoa.isPresent()){
-            _pessoaRepository.delete(pessoa.get());
-            return new ResponseEntity<>(HttpStatus.OK);
-        }
-        else
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        final Pessoa updatedPessoa = pessoaRepository.save(pessoa);
+        return ResponseEntity.ok(updatedPessoa);
     }
 }
